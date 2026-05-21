@@ -1,0 +1,6 @@
+{
+  "type": "commonjs",
+  "scripts": {
+    "dev": "node index.js"
+  }
+}
