@@ -82,32 +82,36 @@ CvForge is an intelligent CV optimization platform that helps job seekers create
 
 ```
 CvForge/
-├── cvforge/
-│   ├── src/
-│   │   ├── components/       # Reusable React components
-│   │   ├── pages/           # Page components
-│   │   ├── context/         # Auth context
-│   │   ├── hooks/           # Custom hooks (useAuth, useUsage)
-│   │   ├── lib/             # Supabase client
-│   │   ├── utils/           # Utility functions
-│   │   ├── App.jsx
-│   │   ├── main.jsx
-│   │   └── index.css
-│   ├── backend/
-│   │   ├── routes/          # API routes (generate, stripe, usage)
-│   │   ├── utils/           # Backend utilities
-│   │   │   ├── claudeApi.js       # Claude API integration
-│   │   │   ├── cvTemplates.js     # CV design templates
-│   │   │   └── parseCV.js         # CV parsing logic
-│   │   ├── pdf-generator.js       # PDF generation
-│   │   ├── index.js               # Express server
-│   │   ├── uploads/         # Temporary file storage
-│   │   └── downloads/       # Generated CV storage
-│   ├── public/              # Static assets
-│   ├── vite.config.js
-│   ├── tailwind.config.js
-│   └── package.json
-└── package.json
+├── backend/
+│   ├── routes/            # API routes (generate, stripe, usage)
+│   ├── utils/             # Backend utilities
+│   │   ├── claudeApi.js   # Claude API integration
+│   │   ├── cvTemplates.js # CV design templates
+│   │   └── parseCV.js     # CV parsing logic
+│   ├── pdf-generator.js   # PDF generation
+│   ├── index.js           # Express server
+│   ├── uploads/           # Temporary file storage
+│   └── downloads/         # Generated CV storage
+├── public/                # Static assets (images, template preview, etc.)
+├── src/
+│   ├── components/        # Reusable React components
+│   ├── pages/             # Page components
+│   ├── context/           # Auth context
+│   ├── hooks/             # Custom hooks (useAuth, useUsage)
+│   ├── lib/               # Supabase client
+│   ├── utils/             # Utility functions
+│   ├── App.jsx
+│   ├── main.jsx
+│   └── index.css
+├── .env                   # Local environment variables
+├── .gitignore             # Git ignored files
+├── index.html             # Frontend entry HTML page
+├── package.json           # Project dependencies & scripts
+├── package-lock.json      # NPM lockfile
+├── postcss.config.js      # PostCSS configuration
+├── tailwind.config.js     # Tailwind CSS configuration
+├── vite.config.js         # Vite configuration
+└── README.md              # Project documentation
 ```
 
 ---
@@ -130,20 +134,8 @@ CvForge/
    cd cvforge
    ```
 
-2. **Install root dependencies**
+2. **Install dependencies**
    ```bash
-   npm install
-   ```
-
-3. **Install frontend dependencies**
-   ```bash
-   cd cvforge
-   npm install
-   ```
-
-4. **Install backend dependencies**
-   ```bash
-   cd backend
    npm install
    ```
 
@@ -152,10 +144,11 @@ CvForge/
 **Development Mode:**
 
 ```bash
-# Terminal 1 - Frontend (from cvforge/)
+# Terminal 1 - Frontend (from root)
 npm run dev
 
-# Terminal 2 - Backend (from cvforge/backend)
+# Terminal 2 - Backend (from backend/)
+cd backend
 npm run dev
 ```
 
