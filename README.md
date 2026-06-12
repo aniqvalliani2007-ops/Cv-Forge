@@ -301,5 +301,5 @@ For questions or support, please reach out or open an issue on GitHub.
 
 ---
 
-**Built with ❤️ by [Your Name]**
+**Built with ❤️ by Aniq Valliani**
 
