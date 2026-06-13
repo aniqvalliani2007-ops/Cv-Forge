@@ -393,7 +393,8 @@ const Dashboard = () => {
       }, 1000);
     } catch (error) {
       clearInterval(progressInterval);
-      alert('Error generating CV: ' + error.message);
+      console.error('Error generating CV:', error);
+      alert(`Error generating CV: ${error.message}\n\nBackend URL: ${API_URL}\nPlease check if backend is deployed and VITE_API_URL is set correctly.`);
       setIsProcessing(false);
     }
   };

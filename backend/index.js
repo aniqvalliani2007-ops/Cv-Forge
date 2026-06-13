@@ -11,8 +11,16 @@ const stripeRoutes = require('./routes/stripe');
 
 const app = express();
 
+// CORS Configuration - Allow frontend origin
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -35,6 +43,16 @@ app.use('/downloads', express.static(downloadsDir));
 app.use('/api/generate', generateRoutes);
 app.use('/api/usage', usageRoutes);
 app.use('/api/stripe', stripeRoutes);
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'Backend is running' });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+    res.json({ message: 'CV Forge Backend API', version: '1.0.0' });
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
