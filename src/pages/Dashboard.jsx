@@ -512,7 +512,7 @@ const Dashboard = () => {
         initial={{ x: -280 }}
         animate={{ x: sidebarOpen ? 0 : -280 }}
         transition={{ duration: 0.3 }}
-        className="fixed left-0 top-0 bottom-0 w-64 bg-slate-50/80 backdrop-blur-xl border-r border-slate-900/10 z-40 shadow-xl lg:translate-x-0"
+        className="fixed left-0 top-0 bottom-0 w-64 bg-slate-50/80 backdrop-blur-xl border-r border-slate-900/10 z-40 shadow-xl lg:translate-x-0 lg:static"
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -571,29 +571,29 @@ const Dashboard = () => {
       )}
 
       {/* Main Content */}
-      <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
+      <div className="lg:ml-64 min-h-screen">
         {/* Top Header */}
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-900/10">
-          <div className="px-4 md:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
+          <div className="px-4 md:px-6 lg:px-8 py-3 md:py-4">
+            <div className="flex items-center justify-between gap-4">
               {/* Left side */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
                 <button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="lg:hidden p-2 rounded-sm hover:bg-slate-100 transition-colors"
+                  className="lg:hidden p-2 rounded-sm hover:bg-slate-100 transition-colors flex-shrink-0"
                 >
                   <Menu className="w-5 h-5 text-slate-900" />
                 </button>
-                <div>
-                  <h1 className="text-xl md:text-2xl font-bold text-slate-900">Create Your Tailored CV</h1>
-                  <p className="text-sm text-slate-600 hidden sm:block">Optimize your resume for ATS systems and job-specific applications</p>
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-slate-900 truncate">Create Your Tailored CV</h1>
+                  <p className="text-xs sm:text-sm text-slate-600 hidden sm:block truncate">Optimize your resume for ATS systems</p>
                 </div>
               </div>
 
               {/* Right side */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
                 {/* Usage Badge */}
-                <div className="hidden md:flex items-center gap-2 rounded-sm border border-slate-900/10 bg-white/70 backdrop-blur-xl px-3 py-1.5 shadow-sm">
+                <div className="hidden sm:flex items-center gap-2 rounded-sm border border-slate-900/10 bg-white/70 backdrop-blur-xl px-2 md:px-3 py-1.5 shadow-sm">
                   <div className="flex items-center gap-1">
                     {[...Array(usage.limit)].map((_, i) => (
                       <div
@@ -604,25 +604,25 @@ const Dashboard = () => {
                       />
                     ))}
                   </div>
-                  <span className="text-xs font-medium text-slate-700">
-                    {remainingGenerations} of {usage.limit} left
+                  <span className="text-xs font-medium text-slate-700 whitespace-nowrap">
+                    {remainingGenerations} left
                   </span>
                 </div>
 
                 {/* Notifications */}
-                <div className="relative">
+                <div className="relative hidden sm:block">
                   <button
                     onClick={() => setShowNotifications(!showNotifications)}
                     className="p-2 rounded-sm hover:bg-slate-100 transition-colors relative"
                   >
-                    <Bell className="w-5 h-5 text-slate-900" />
+                    <Bell className="w-4 md:w-5 h-4 md:h-5 text-slate-900" />
                     <span className="absolute top-1 right-1 w-2 h-2 bg-slate-600 rounded-full"></span>
                   </button>
                   
                   {showNotifications && (
-                    <div className="absolute right-0 mt-2 w-80 bg-white/95 backdrop-blur-xl rounded-sm border border-slate-900/10 shadow-lg z-50">
+                    <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white/95 backdrop-blur-xl rounded-sm border border-slate-900/10 shadow-lg z-50">
                       <div className="p-3 border-b border-slate-900/10">
-                        <p className="font-medium text-slate-900">Notifications</p>
+                        <p className="font-medium text-slate-900 text-sm">Notifications</p>
                       </div>
                       <div className="p-3 text-center text-sm text-slate-600">
                         No new notifications
@@ -634,19 +634,19 @@ const Dashboard = () => {
                 {/* Theme Toggle */}
                 <button
                   onClick={() => setDarkMode(!darkMode)}
-                  className="p-2 rounded-sm hover:bg-slate-100 transition-colors"
+                  className="p-2 rounded-sm hover:bg-slate-100 transition-colors hidden sm:block"
                 >
-                  {darkMode ? <Sun className="w-5 h-5 text-slate-900" /> : <Moon className="w-5 h-5 text-slate-900" />}
+                  {darkMode ? <Sun className="w-4 md:w-5 h-4 md:h-5 text-slate-900" /> : <Moon className="w-4 md:w-5 h-4 md:h-5 text-slate-900" />}
                 </button>
 
                 {/* User Avatar Dropdown */}
                 <div className="relative">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center gap-2 p-1.5 rounded-sm hover:bg-slate-100 transition-colors"
+                    className="flex items-center gap-2 p-1 md:p-1.5 rounded-sm hover:bg-slate-100 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-sm bg-slate-900 flex items-center justify-center">
-                      <User className="w-4 h-4 text-white" />
+                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-sm bg-slate-900 flex items-center justify-center">
+                      <User className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
                     </div>
                   </button>
                   
@@ -676,8 +676,8 @@ const Dashboard = () => {
         <main className="p-4 md:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             {/* Step Progress */}
-            <div className="mb-10">
-              <div className="flex items-center justify-between relative">
+            <div className="mb-8 md:mb-10 overflow-x-auto">
+              <div className="flex items-center justify-between relative min-w-[500px] sm:min-w-0 px-4 sm:px-0">
                 <div className="absolute left-0 right-0 top-5 h-0.5 bg-slate-200/50 -z-10" />
                 <div 
                   className="absolute left-0 top-5 h-0.5 bg-slate-900 transition-all duration-500 -z-10"
@@ -685,9 +685,9 @@ const Dashboard = () => {
                 />
                 
                 {steps.map((step, index) => (
-                  <div key={index} className="flex flex-col items-center flex-1">
+                  <div key={index} className="flex flex-col items-center flex-1 min-w-0">
                     <div className={`
-                      w-10 h-10 rounded-sm flex items-center justify-center text-sm font-semibold
+                      w-8 h-8 sm:w-10 sm:h-10 rounded-sm flex items-center justify-center text-xs sm:text-sm font-semibold
                       transition-all duration-300 z-10
                       ${step.completed || currentStep > index 
                         ? 'bg-slate-900 text-white shadow-lg shadow-slate-300' 
@@ -695,9 +695,9 @@ const Dashboard = () => {
                           ? 'bg-white/70 border-2 border-slate-900 text-slate-900' 
                           : 'bg-slate-100 text-slate-400'}
                     `}>
-                      {step.completed ? <CheckCircle className="w-5 h-5" /> : step.number}
+                      {step.completed ? <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" /> : step.number}
                     </div>
-                    <span className={`text-xs mt-2 font-medium ${currentStep >= index + 1 ? 'text-slate-900' : 'text-slate-400'}`}>
+                    <span className={`text-[10px] sm:text-xs mt-1 sm:mt-2 font-medium text-center ${currentStep >= index + 1 ? 'text-slate-900' : 'text-slate-400'}`}>
                       {step.title}
                     </span>
                   </div>
@@ -705,7 +705,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
               {/* Main Content Area */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Step 1: Upload CV */}
