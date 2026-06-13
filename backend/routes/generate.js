@@ -14,11 +14,10 @@ const supabase = createClient(
     process.env.SUPABASE_ANON_KEY
 );
 
-// Configure multer for file upload (use /tmp for Vercel)
+// Configure multer for file upload
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const uploadPath = process.env.VERCEL ? '/tmp/uploads' : './uploads';
-        // Ensure directory exists
+        const uploadPath = './uploads';
         if (!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true });
         }

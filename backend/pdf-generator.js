@@ -9,9 +9,8 @@ const generatePDF = async (tailoredCV, template, userId) => {
             const timestamp = Date.now();
             const uniqueId = Math.random().toString(36).substring(7);
             const filename = `cv_${userId}_${timestamp}_${uniqueId}.pdf`;
-            const downloadPath = process.env.VERCEL ? '/tmp/downloads' : path.join(__dirname, 'downloads');
+            const downloadPath = path.join(__dirname, 'downloads');
             
-            // Ensure directory exists
             if (!fs.existsSync(downloadPath)) {
                 fs.mkdirSync(downloadPath, { recursive: true });
             }
