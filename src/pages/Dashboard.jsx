@@ -37,6 +37,9 @@ import {
 import { useAuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+// Get API URL from environment variable
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 // Animated Counter Component
 const AnimatedCounter = ({ value, className }) => {
   const [count, setCount] = useState(0);
@@ -216,7 +219,7 @@ const Dashboard = () => {
       const storageKey = user ? `usage_${user.id}` : 'demo_usage';
       try {
         if (user) {
-          const response = await fetch(`http://localhost:5000/api/usage/${user.id}`);
+          const response = await fetch(`${API_URL}/api/usage/${user.id}`);
           if (response.ok) {
             const data = await response.json();
             setUsage({ used: data.used, limit: data.limit === 'Unlimited' ? Infinity : data.limit });
@@ -238,7 +241,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/generate/templates');
+        const response = await fetch(`${API_URL}/api/generate/templates`);
         const data = await response.json();
         if (response.ok && Array.isArray(data.templates)) {
           setTemplates(data.templates);
@@ -344,7 +347,7 @@ const Dashboard = () => {
       formData.append('jobDescription', jobDescription);
       formData.append('userId', user?.id || 'demo-user');
 
-      const response = await fetch('http://localhost:5000/api/generate/cv', {
+      const response = await fetch(`${API_URL}/api/generate/cv`, {
         method: 'POST',
         body: formData,
       });
@@ -372,7 +375,7 @@ const Dashboard = () => {
           fileName: cvFile?.name || 'resume.pdf',
           atsScore: Number(data.analysis?.atsScore ?? 0),
           keywordMatch: Number(data.analysis?.keywordMatch ?? 0),
-          downloadUrl: `http://localhost:5000${data.downloadUrl}`,
+          downloadUrl: `${API_URL}${data.downloadUrl}`,
           templateUsed: selectedTemplate
         });
         setSelectedTemplateId(selectedTemplate?.id || null);
@@ -422,7 +425,7 @@ const Dashboard = () => {
       formData.append('userId', user?.id || 'demo-user');
       formData.append('templateId', templateId);
 
-      const response = await fetch('http://localhost:5000/api/generate/cv-with-template', {
+      const response = await fetch(`${API_URL}/api/generate/cv-with-template`, {
         method: 'POST',
         body: formData,
       });
@@ -445,7 +448,7 @@ const Dashboard = () => {
         fileName: cvFile?.name || 'resume.pdf',
         atsScore: Number(data.analysis?.atsScore ?? 0),
         keywordMatch: Number(data.analysis?.keywordMatch ?? 0),
-        downloadUrl: `http://localhost:5000${data.downloadUrl}`,
+        downloadUrl: `${API_URL}${data.downloadUrl}`,
         templateUsed: data.template || data.templateUsed || { id: templateId }
       });
       setSelectedTemplateId(templateId);
@@ -506,7 +509,7 @@ const Dashboard = () => {
   ];
   return (
     <div className={`min-h-screen ${darkMode ? 'dark' : ''}`}>
-      <div className="min-h-screen bg-white transition-colors duration-300">
+      <div className="min-h-screen bg-white transition-colors duration-300 flex">
       {/* Sidebar */}
       <motion.aside 
         initial={{ x: -280 }}
@@ -571,9 +574,9 @@ const Dashboard = () => {
       )}
 
       {/* Main Content */}
-      <div className="lg:ml-64 min-h-screen">
+      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
         {/* Top Header */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-900/10">
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-900/10 flex-shrink-0">
           <div className="px-4 md:px-6 lg:px-8 py-3 md:py-4">
             <div className="flex items-center justify-between gap-4">
               {/* Left side */}
@@ -673,8 +676,8 @@ const Dashboard = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className="p-4 md:p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
+          <div className="max-w-7xl mx-auto h-full">
             {/* Step Progress */}
             <div className="mb-8 md:mb-10 overflow-x-auto">
               <div className="flex items-center justify-between relative min-w-[500px] sm:min-w-0 px-4 sm:px-0">
