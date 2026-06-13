@@ -24,9 +24,9 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Ensure directories exist
-const uploadsDir = path.join(__dirname, 'uploads');
-const downloadsDir = path.join(__dirname, 'downloads');
+// Ensure directories exist (use /tmp on Vercel)
+const uploadsDir = process.env.VERCEL ? '/tmp/uploads' : path.join(__dirname, 'uploads');
+const downloadsDir = process.env.VERCEL ? '/tmp/downloads' : path.join(__dirname, 'downloads');
 
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
@@ -51,7 +51,17 @@ app.get('/api/health', (req, res) => {
 
 // Root endpoint
 app.get('/', (req, res) => {
-    res.json({ message: 'CV Forge Backend API', version: '1.0.0' });
+    res.json({ 
+        message: 'CV Forge Backend API', 
+        version: '1.0.0',
+        environment: process.env.VERCEL ? 'Vercel' : 'Local',
+        endpoints: {
+            health: '/api/health',
+            generateCV: '/api/generate/cv',
+            templates: '/api/generate/templates',
+            usage: '/api/usage/:userId'
+        }
+    });
 });
 
 // Error handling middleware
