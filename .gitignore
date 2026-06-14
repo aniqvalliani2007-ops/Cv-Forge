@@ -5,3 +5,8 @@ dist
 .env.*.local
 *.log
 .DS_Store
+
+# Test/temp files
+*.pdf
+test.cjs
+test_*.js
