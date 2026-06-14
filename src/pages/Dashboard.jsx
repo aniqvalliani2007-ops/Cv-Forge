@@ -128,32 +128,28 @@ export default function Dashboard() {
   const runGeneration = async (templateId = null) => {
     if (usage.used >= usage.limit) { setShowLimitModal(true); return null; }
 
-    setIsProcessing(true); setProcessingStep(0); setCurrentStep(3);
-
-    // Animate progress steps
-    const interval = setInterval(() => {
-      setProcessingStep(p => p < processingSteps.length - 1 ? p + 1 : p);
-    }, 2000);
+    setIsProcessing(true);
+    setProcessingStep(0);
+    setCurrentStep(3);
 
     try {
-      // Step 1 – parse PDF
+      // Step 0 – parse PDF
       setProcessingStep(0);
       const parsedCV = await parsePDFFile(cvFile);
 
-      // Step 2 – pick template
+      // Step 1 – pick template + small visual pause so user sees step 1
       setProcessingStep(1);
       const template = templateId ? getTemplateById(templateId) : getRandomTemplate();
+      await new Promise(r => setTimeout(r, 600));
 
-      // Step 3 – call OpenRouter
+      // Step 2 – call OpenRouter AI (real work, takes longest)
       setProcessingStep(2);
       const tailoredCV = await generateTailoredCV(parsedCV, jobDescription, template);
 
-      // Step 4 – generate PDF in browser
+      // Step 3 – generate PDF
       setProcessingStep(3);
+      await new Promise(r => setTimeout(r, 500));
       const pdfDoc = generatePDF(tailoredCV, template);
-
-      clearInterval(interval);
-      setProcessingStep(processingSteps.length - 1);
 
       setAtsScore(Number(tailoredCV.analysis?.atsScore ?? 0));
       setKeywordMatch(Number(tailoredCV.analysis?.keywordMatch ?? 0));
@@ -165,10 +161,11 @@ export default function Dashboard() {
       await incrementUsage(user?.id);
       setUsage(prev => ({ ...prev, used: prev.used + 1 }));
 
+      // Pause so user sees 100% complete before moving on
+      await new Promise(r => setTimeout(r, 800));
       setIsProcessing(false);
       return pdfDoc;
     } catch (err) {
-      clearInterval(interval);
       setIsProcessing(false);
       alert(`Error: ${err.message}`);
       setCurrentStep(2);
@@ -363,22 +360,87 @@ export default function Dashboard() {
                   {/* Step 3 – Processing */}
                   {currentStep === 3 && isProcessing && (
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-                      <Card className="text-center py-12">
-                        <div className="relative w-20 h-20 mx-auto mb-6">
-                          <div className="absolute inset-0 rounded-sm border-4 border-slate-900/10" />
-                          <div className="absolute inset-0 flex items-center justify-center"><Sparkles className="w-8 h-8 text-slate-900 animate-pulse" /></div>
-                        </div>
-                        <h3 className="text-xl font-semibold text-slate-900 mb-2">{processingSteps[processingStep]?.text}</h3>
-                        <p className="text-sm text-slate-600 mb-6">Please wait while our AI optimizes your resume</p>
-                        <div className="max-w-xs mx-auto space-y-3 text-left">
-                          {processingSteps.map((step, i) => (
-                            <div key={i} className="flex items-center gap-3">
-                              <div className={`w-6 h-6 rounded-sm flex items-center justify-center text-xs flex-shrink-0 ${i <= processingStep ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                {i < processingStep ? <CheckCircle className="w-4 h-4" /> : i === processingStep ? <Loader className="w-3 h-3 animate-spin" /> : i + 1}
-                              </div>
-                              <span className={`text-sm ${i <= processingStep ? 'text-slate-900 font-medium' : 'text-slate-500'}`}>{step.text}</span>
+                      <Card className="py-10 px-6">
+                        {/* Animated icon */}
+                        <div className="flex flex-col items-center mb-8">
+                          <div className="relative w-20 h-20 mb-5">
+                            {/* Spinning ring */}
+                            <svg className="absolute inset-0 w-full h-full animate-spin" viewBox="0 0 80 80">
+                              <circle cx="40" cy="40" r="34" fill="none" stroke="#e2e8f0" strokeWidth="4" />
+                              <circle cx="40" cy="40" r="34" fill="none" stroke="#0f172a" strokeWidth="4"
+                                strokeDasharray="213" strokeDashoffset={213 - (213 * processingSteps[processingStep]?.progress / 100)}
+                                strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.8s ease', transformOrigin:'center', transform:'rotate(-90deg)' }} />
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Sparkles className="w-7 h-7 text-slate-900" />
                             </div>
-                          ))}
+                          </div>
+                          <h3 className="text-xl font-bold text-slate-900 mb-1">{processingSteps[processingStep]?.text}</h3>
+                          <p className="text-sm text-slate-500">Please wait while AI optimizes your resume</p>
+                        </div>
+
+                        {/* Overall progress bar */}
+                        <div className="max-w-sm mx-auto mb-8">
+                          <div className="flex justify-between text-xs text-slate-500 mb-2">
+                            <span>Progress</span>
+                            <span className="font-semibold text-slate-900">{processingSteps[processingStep]?.progress}%</span>
+                          </div>
+                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <motion.div
+                              className="h-full rounded-full bg-gradient-to-r from-slate-700 to-slate-900"
+                              initial={{ width: '0%' }}
+                              animate={{ width: `${processingSteps[processingStep]?.progress}%` }}
+                              transition={{ duration: 0.8, ease: 'easeInOut' }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Steps list */}
+                        <div className="max-w-sm mx-auto space-y-3">
+                          {processingSteps.map((step, i) => {
+                            const isDone = i < processingStep;
+                            const isActive = i === processingStep;
+                            const isPending = i > processingStep;
+                            return (
+                              <motion.div
+                                key={i}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.1 }}
+                                className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-500 ${
+                                  isDone  ? 'bg-green-50 border-green-200' :
+                                  isActive ? 'bg-slate-900 border-slate-900 shadow-lg' :
+                                             'bg-slate-50 border-slate-100'
+                                }`}
+                              >
+                                {/* Icon */}
+                                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                  isDone  ? 'bg-green-500' :
+                                  isActive ? 'bg-white' :
+                                             'bg-slate-200'
+                                }`}>
+                                  {isDone   ? <CheckCircle className="w-4 h-4 text-white" /> :
+                                   isActive  ? <Loader className="w-4 h-4 text-slate-900 animate-spin" /> :
+                                               <span className="text-xs font-bold text-slate-400">{i + 1}</span>}
+                                </div>
+                                {/* Label */}
+                                <span className={`text-sm font-medium ${
+                                  isDone   ? 'text-green-700' :
+                                  isActive  ? 'text-white' :
+                                              'text-slate-400'
+                                }`}>
+                                  {step.text}
+                                </span>
+                                {/* Right badge */}
+                                {isDone && (
+                                  <span className="ml-auto text-xs font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">Done</span>
+                                )}
+                                {isActive && (
+                                  <span className="ml-auto text-xs font-semibold text-slate-300">In progress...</span>
+                                )}
+                              </motion.div>
+                            );
+                          })}
                         </div>
                       </Card>
                     </motion.div>
