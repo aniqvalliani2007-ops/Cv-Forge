@@ -109,6 +109,10 @@ IMPORTANT:
   let lastError = null;
   let modelsToTry = [MODEL, ...FREE_MODELS.filter(m => m !== MODEL)];
 
+  console.log('🚀 Starting CV generation with fallback models...');
+  console.log('📋 Parsed CV data:', parsedCV);
+  console.log('📄 Job description length:', jobDescription.length);
+
   for (const model of modelsToTry) {
     try {
       console.log(`🔄 Trying model: ${model}`);
@@ -116,6 +120,8 @@ IMPORTANT:
       
       const content = data.choices?.[0]?.message?.content;
       if (!content) throw new Error('No response from AI');
+
+      console.log('📦 Raw AI response:', content.substring(0, 200) + '...');
 
       // Clean the response (remove markdown if present)
       let cleanContent = content.trim();
@@ -129,6 +135,7 @@ IMPORTANT:
       tailoredCV.template = { id: template.id, name: template.name, style: template.style };
       
       console.log(`✅ Success with model: ${model}`);
+      console.log('📊 Generated CV data:', tailoredCV);
       return tailoredCV;
     } catch (error) {
       console.warn(`❌ Model ${model} failed:`, error.message);

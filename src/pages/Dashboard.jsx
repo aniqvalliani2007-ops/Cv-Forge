@@ -126,7 +126,28 @@ export default function Dashboard() {
 
   // ── Core generation ────────────────────────────────────────────────────────
   const runGeneration = async (templateId = null) => {
-    if (usage.used >= usage.limit) { setShowLimitModal(true); return null; }
+    console.log('🎯 runGeneration called with templateId:', templateId);
+    console.log('📊 Current usage:', usage);
+    console.log('📁 CV File:', cvFile?.name);
+    console.log('📝 Job description:', jobDescription.substring(0, 100) + '...');
+
+    if (usage.used >= usage.limit) { 
+      console.warn('⚠️ Usage limit reached');
+      setShowLimitModal(true); 
+      return null; 
+    }
+
+    if (!cvFile) {
+      console.error('❌ No CV file provided');
+      alert('Please upload a CV first');
+      return null;
+    }
+
+    if (!jobDescription || jobDescription.trim().length < 10) {
+      console.error('❌ Job description too short or missing');
+      alert('Please provide a job description (at least 10 characters)');
+      return null;
+    }
 
     setIsProcessing(true);
     setProcessingStep(0);
@@ -134,22 +155,30 @@ export default function Dashboard() {
 
     try {
       // Step 0 – parse PDF
+      console.log('📄 Step 0: Parsing PDF...');
       setProcessingStep(0);
       const parsedCV = await parsePDFFile(cvFile);
+      console.log('✅ PDF parsed:', parsedCV);
 
       // Step 1 – pick template + small visual pause so user sees step 1
+      console.log('🎨 Step 1: Selecting template...');
       setProcessingStep(1);
       const template = templateId ? getTemplateById(templateId) : getRandomTemplate();
+      console.log('✅ Template selected:', template.name);
       await new Promise(r => setTimeout(r, 600));
 
       // Step 2 – call OpenRouter AI (real work, takes longest)
+      console.log('🤖 Step 2: Calling AI to tailor CV...');
       setProcessingStep(2);
       const tailoredCV = await generateTailoredCV(parsedCV, jobDescription, template);
+      console.log('✅ CV tailored by AI:', tailoredCV);
 
       // Step 3 – generate PDF
+      console.log('📑 Step 3: Generating PDF...');
       setProcessingStep(3);
       await new Promise(r => setTimeout(r, 500));
       const pdfDoc = generatePDF(tailoredCV, template);
+      console.log('✅ PDF generated');
 
       setAtsScore(Number(tailoredCV.analysis?.atsScore ?? 0));
       setKeywordMatch(Number(tailoredCV.analysis?.keywordMatch ?? 0));
@@ -164,18 +193,27 @@ export default function Dashboard() {
       // Pause so user sees 100% complete before moving on
       await new Promise(r => setTimeout(r, 800));
       setIsProcessing(false);
+      console.log('✅ Generation complete!');
       return pdfDoc;
     } catch (err) {
+      console.error('❌ Generation error:', err);
+      console.error('Error stack:', err.stack);
       setIsProcessing(false);
-      alert(`Error: ${err.message}`);
+      alert(`Error: ${err.message}\n\nCheck browser console (F12) for details.`);
       setCurrentStep(2);
       return null;
     }
   };
 
   const handleGenerate = async () => {
+    console.log('🚀 handleGenerate called');
     const pdf = await runGeneration(null);
-    if (pdf) setCurrentStep(3);
+    if (pdf) {
+      console.log('✅ Moving to step 3 (template selection)');
+      setCurrentStep(3);
+    } else {
+      console.warn('⚠️ PDF generation returned null');
+    }
   };
 
   const handleGenerateWithTemplate = async (templateId) => {
