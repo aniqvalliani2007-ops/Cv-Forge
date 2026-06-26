@@ -3,20 +3,20 @@
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
-const MODEL = import.meta.env.VITE_OPENROUTER_MODEL || 'meta-llama/llama-3.1-8b-instruct:free';
+const MODEL = import.meta.env.VITE_OPENROUTER_MODEL || 'meta-llama/llama-3.2-3b-instruct:free';
 
-// List of free models to try in order
+// List of free models to try in order (updated list - January 2025)
 const FREE_MODELS = [
-  'meta-llama/llama-3.1-8b-instruct:free',
+  'meta-llama/llama-3.2-3b-instruct:free',
+  'meta-llama/llama-3.2-1b-instruct:free',
+  'google/gemini-2.0-flash-exp:free',
   'mistralai/mistral-7b-instruct:free',
-  'google/gemma-7b-it:free',
   'microsoft/phi-3-mini-128k-instruct:free',
+  'nousresearch/hermes-3-llama-3.1-405b:free',
+  'liquid/lfm-40b:free',
   'qwen/qwen-2-7b-instruct:free',
-  'huggingfaceh4/zephyr-7b-beta:free',
-  'openchat/openchat-7b:free',
-  'nousresearch/nous-capybara-7b:free',
-  'gryphe/mythomist-7b:free',
-  'undi95/toppy-m-7b:free'
+  'google/gemma-2-9b-it:free',
+  'huggingfaceh4/zephyr-7b-beta:free'
 ];
 
 const callOpenRouter = async (model, prompt) => {
@@ -31,8 +31,8 @@ const callOpenRouter = async (model, prompt) => {
     body: JSON.stringify({
       model: model,
       messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-      temperature: 0.7
+      temperature: 0.7,
+      max_tokens: 4000
     })
   });
 
@@ -58,7 +58,7 @@ Template Description: ${template.description}
 
 TASK: Create a tailored, ATS-optimized resume that matches the job description.
 
-Return a JSON object with EXACTLY this structure:
+Return ONLY a valid JSON object with EXACTLY this structure (no markdown, no extra text):
 {
   "personalInfo": {
     "name": "string",
@@ -68,8 +68,8 @@ Return a JSON object with EXACTLY this structure:
   },
   "professionalTitle": "string (tailored to job)",
   "analysis": {
-    "atsScore": number (0-100),
-    "keywordMatch": number (0-100),
+    "atsScore": 85,
+    "keywordMatch": 78,
     "detectedSkills": ["skill1", "skill2"],
     "missingKeywords": ["keyword1", "keyword2"],
     "optimizedSummary": "string (200-300 chars, tailored to job)",
@@ -102,7 +102,8 @@ IMPORTANT:
 1. Use keywords from the job description naturally
 2. Achievements should be quantifiable with metrics when possible
 3. ATS score should be realistic based on keyword matching
-4. Keep all original personal info (name, email, phone)`;
+4. Keep all original personal info (name, email, phone)
+5. Return ONLY valid JSON, no markdown code blocks`;
 
   // Try the configured model first
   let lastError = null;
@@ -110,13 +111,21 @@ IMPORTANT:
 
   for (const model of modelsToTry) {
     try {
-      console.log(`Trying model: ${model}`);
+      console.log(`🔄 Trying model: ${model}`);
       const data = await callOpenRouter(model, prompt);
       
       const content = data.choices?.[0]?.message?.content;
       if (!content) throw new Error('No response from AI');
 
-      const tailoredCV = JSON.parse(content);
+      // Clean the response (remove markdown if present)
+      let cleanContent = content.trim();
+      if (cleanContent.startsWith('```json')) {
+        cleanContent = cleanContent.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+      } else if (cleanContent.startsWith('```')) {
+        cleanContent = cleanContent.replace(/```\n?/g, '');
+      }
+
+      const tailoredCV = JSON.parse(cleanContent);
       tailoredCV.template = { id: template.id, name: template.name, style: template.style };
       
       console.log(`✅ Success with model: ${model}`);
@@ -125,11 +134,18 @@ IMPORTANT:
       console.warn(`❌ Model ${model} failed:`, error.message);
       lastError = error;
       
-      // If it's a credits/auth issue, try next model
+      // If it's a credits/auth/availability issue, try next model
       if (error.message.includes('credits') || 
           error.message.includes('endpoints') || 
           error.message.includes('afford') ||
-          error.message.includes('rate limit')) {
+          error.message.includes('unavailable') ||
+          error.message.includes('rate limit') ||
+          error.message.includes('not available')) {
+        continue;
+      }
+      
+      // For JSON parsing errors, try next model
+      if (error.message.includes('JSON')) {
         continue;
       }
       
@@ -139,5 +155,5 @@ IMPORTANT:
   }
 
   // If all models failed
-  throw new Error(`All models failed. Last error: ${lastError?.message || 'Unknown error'}`);
+  throw new Error(`All free models failed. Please add credits to your OpenRouter account or try again later. Last error: ${lastError?.message || 'Unknown error'}`);
 };
