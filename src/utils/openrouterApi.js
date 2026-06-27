@@ -8,19 +8,22 @@ const MODEL = import.meta.env.VITE_OPENROUTER_MODEL || 'meta-llama/llama-3.2-3b-
 // Enable mock mode if all APIs fail (for demo/urgent situations)
 const ENABLE_MOCK_FALLBACK = false; // DISABLED - Only use real API
 
-// List of models to try in order - PAID models that actually work
-const PAID_MODELS = [
-  'openai/gpt-4o-mini',           // $0.15/1M tokens - Best quality/price
-  'google/gemini-flash-1.5',      // $0.075/1M tokens - Very cheap
-  'anthropic/claude-3-haiku',     // $0.25/1M tokens - High quality
-  'meta-llama/llama-3.1-8b-instruct', // $0.05/1M tokens - Good and cheap
-  'mistralai/mistral-7b-instruct' // $0.25/1M tokens - Reliable
+// List of models to try in order - FREE models that work (January 2025)
+const FREE_MODELS = [
+  'google/gemini-2.0-flash-exp:free',      // Google's latest free model
+  'google/gemini-flash-1.5-8b:free',       // Smaller Gemini
+  'mistralai/mistral-small:free',          // Mistral's free tier
+  'meta-llama/llama-3.2-3b-instruct:free', // Meta Llama 3.2
+  'meta-llama/llama-3.2-1b-instruct:free', // Smaller Llama
+  'google/gemma-2-9b-it:free',             // Google Gemma
+  'microsoft/phi-3-mini-128k-instruct:free', // Microsoft Phi
+  'qwen/qwen-2-7b-instruct:free',          // Alibaba Qwen
 ];
 
-// Free models as last resort (but they're rate-limited)
-const FREE_MODELS = [
-  'meta-llama/llama-3.2-3b-instruct:free',
-  'meta-llama/llama-3.2-1b-instruct:free',
+// Paid models as backup (very cheap)
+const PAID_MODELS = [
+  'openai/gpt-4o-mini',           // $0.15/1M tokens
+  'google/gemini-flash-1.5',      // $0.075/1M tokens
 ];
 
 const callOpenRouter = async (model, prompt) => {
@@ -225,9 +228,9 @@ IMPORTANT:
 4. Keep all original personal info (name, email, phone)
 5. Return ONLY valid JSON, no markdown code blocks`;
 
-  // Try paid models first, then free as backup
+  // Try FREE models first, then paid as backup
   let lastError = null;
-  let modelsToTry = [MODEL, ...PAID_MODELS.filter(m => m !== MODEL), ...FREE_MODELS];
+  let modelsToTry = [MODEL, ...FREE_MODELS.filter(m => m !== MODEL), ...PAID_MODELS];
 
   console.log('🚀 Starting CV generation with fallback models...');
   console.log('📋 Parsed CV data:', parsedCV);
@@ -261,19 +264,32 @@ IMPORTANT:
       console.warn(`❌ Model ${model} failed:`, error.message);
       lastError = error;
       
+      // Show user-friendly error in UI
+      const errorMsg = error.message.toLowerCase();
+      if (errorMsg.includes('429') || errorMsg.includes('rate limit')) {
+        console.warn(`⏱️ Rate limited on ${model}, trying next model...`);
+      } else if (errorMsg.includes('credits') || errorMsg.includes('afford')) {
+        console.warn(`💰 No credits for ${model}, trying next model...`);
+      } else if (errorMsg.includes('unavailable') || errorMsg.includes('endpoints')) {
+        console.warn(`🚫 ${model} unavailable, trying next model...`);
+      } else {
+        console.warn(`⚠️ ${model} error: ${error.message}`);
+      }
+      
       // If it's a credits/auth/availability issue, try next model
-      if (error.message.includes('credits') || 
-          error.message.includes('endpoints') || 
-          error.message.includes('afford') ||
-          error.message.includes('unavailable') ||
-          error.message.includes('rate limit') ||
-          error.message.includes('429') ||
-          error.message.includes('not available')) {
+      if (errorMsg.includes('credits') || 
+          errorMsg.includes('endpoints') || 
+          errorMsg.includes('afford') ||
+          errorMsg.includes('unavailable') ||
+          errorMsg.includes('rate limit') ||
+          errorMsg.includes('429') ||
+          errorMsg.includes('not available')) {
         continue;
       }
       
       // For JSON parsing errors, try next model
       if (error.message.includes('JSON')) {
+        console.warn('📝 JSON parsing failed, trying next model...');
         continue;
       }
       
