@@ -1,32 +1,23 @@
 // src/utils/openrouterApi.js
-// Calls OpenRouter API directly from the browser with free model fallback + mock mode
+// Calls OpenRouter API directly from the browser
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
-const MODEL = import.meta.env.VITE_OPENROUTER_MODEL || 'meta-llama/llama-3.2-3b-instruct:free';
 
-// Enable mock mode if all APIs fail (for demo/urgent situations)
-const ENABLE_MOCK_FALLBACK = false; // DISABLED - Only use real API
-
-// List of models to try in order - FREE models that work (January 2025)
-const FREE_MODELS = [
-  'google/gemini-2.0-flash-exp:free',      // Google's latest free model
-  'google/gemini-flash-1.5-8b:free',       // Smaller Gemini
-  'mistralai/mistral-small:free',          // Mistral's free tier
-  'meta-llama/llama-3.2-3b-instruct:free', // Meta Llama 3.2
-  'meta-llama/llama-3.2-1b-instruct:free', // Smaller Llama
-  'google/gemma-2-9b-it:free',             // Google Gemma
-  'microsoft/phi-3-mini-128k-instruct:free', // Microsoft Phi
-  'qwen/qwen-2-7b-instruct:free',          // Alibaba Qwen
+// Use the cheapest PAID models that actually work (free tier is broken)
+// These cost almost nothing: ~$0.01 per CV generation
+const WORKING_MODELS = [
+  'google/gemini-flash-1.5',           // $0.075/1M tokens - VERY CHEAP
+  'openai/gpt-4o-mini',                // $0.15/1M tokens  
+  'meta-llama/llama-3.1-8b-instruct',  // $0.05/1M tokens - CHEAPEST
+  'anthropic/claude-3-haiku',          // $0.25/1M tokens
 ];
 
-// Paid models as backup (very cheap)
-const PAID_MODELS = [
-  'openai/gpt-4o-mini',           // $0.15/1M tokens
-  'google/gemini-flash-1.5',      // $0.075/1M tokens
-];
+const MODEL = import.meta.env.VITE_OPENROUTER_MODEL || 'google/gemini-flash-1.5';
 
 const callOpenRouter = async (model, prompt) => {
+  console.log(`🔄 Calling OpenRouter with model: ${model}`);
+  
   const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -43,128 +34,14 @@ const callOpenRouter = async (model, prompt) => {
     })
   });
 
+  const data = await response.json();
+  
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error?.message || `API error: ${response.status}`);
+    console.error('❌ OpenRouter API Error:', data);
+    throw new Error(data.error?.message || `API error: ${response.status} - ${JSON.stringify(data)}`);
   }
 
-  return response.json();
-};
-
-// Mock CV generator for when all APIs fail
-const generateMockTailoredCV = (parsedCV, jobDescription, template) => {
-  console.log('🎭 Using MOCK mode - generating demo CV');
-  
-  const keywords = extractKeywords(jobDescription);
-  const skills = parsedCV.skills?.length > 0 ? parsedCV.skills : ['JavaScript', 'React', 'Node.js', 'MongoDB', 'Git'];
-  
-  return {
-    personalInfo: parsedCV.personalInfo || {
-      name: parsedCV.personalInfo?.name || 'John Doe',
-      email: parsedCV.personalInfo?.email || 'john@example.com',
-      phone: parsedCV.personalInfo?.phone || '+1234567890',
-      location: parsedCV.personalInfo?.location || 'New York, USA'
-    },
-    professionalTitle: determineProfessionalTitle(jobDescription, parsedCV),
-    analysis: {
-      atsScore: Math.floor(Math.random() * 15) + 80, // 80-95
-      keywordMatch: Math.floor(Math.random() * 20) + 75, // 75-95
-      detectedSkills: skills.slice(0, 8),
-      missingKeywords: keywords.slice(0, 3),
-      optimizedSummary: generateOptimizedSummary(parsedCV, jobDescription),
-      optimizedExperience: optimizeExperience(parsedCV.experience || [], jobDescription)
-    },
-    education: parsedCV.education || [{
-      degree: 'Bachelor of Science in Computer Science',
-      institution: 'University of Technology'
-    }],
-    skills: skills,
-    certifications: parsedCV.certifications || [],
-    preview: {
-      firstName: parsedCV.personalInfo?.name?.split(' ')[0] || 'John',
-      lastName: parsedCV.personalInfo?.name?.split(' ').slice(1).join(' ') || 'Doe',
-      jobTitle: determineProfessionalTitle(jobDescription, parsedCV),
-      summary: generateOptimizedSummary(parsedCV, jobDescription),
-      topSkills: skills.slice(0, 5)
-    }
-  };
-};
-
-const extractKeywords = (text) => {
-  const common = ['experience', 'strong', 'excellent', 'good', 'required', 'preferred', 'knowledge'];
-  const words = text.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
-  const freq = {};
-  words.forEach(w => {
-    if (!common.includes(w)) {
-      freq[w] = (freq[w] || 0) + 1;
-    }
-  });
-  return Object.entries(freq)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([word]) => word);
-};
-
-const determineProfessionalTitle = (jobDescription, parsedCV) => {
-  const jobTitles = ['Software Engineer', 'Full Stack Developer', 'Frontend Developer', 
-                     'Backend Developer', 'DevOps Engineer', 'Data Engineer', 'Product Manager'];
-  
-  for (const title of jobTitles) {
-    if (jobDescription.toLowerCase().includes(title.toLowerCase())) {
-      return title;
-    }
-  }
-  
-  if (parsedCV.experience?.[0]?.title) {
-    return parsedCV.experience[0].title;
-  }
-  
-  return 'Software Engineer';
-};
-
-const generateOptimizedSummary = (parsedCV, jobDescription) => {
-  const title = determineProfessionalTitle(jobDescription, parsedCV);
-  const experience = parsedCV.experience?.length || 0;
-  const skills = parsedCV.skills?.slice(0, 3).join(', ') || 'various technologies';
-  
-  return `Experienced ${title} with ${experience > 0 ? experience + '+ years' : 'proven expertise'} in ${skills}. Passionate about delivering high-quality solutions and driving technical excellence. Strong problem-solving abilities and collaborative team player.`;
-};
-
-const optimizeExperience = (experiences, jobDescription) => {
-  if (!experiences || experiences.length === 0) {
-    return [{
-      title: 'Software Engineer',
-      company: 'Tech Company',
-      achievements: [
-        'Developed and maintained scalable web applications',
-        'Collaborated with cross-functional teams to deliver projects',
-        'Improved system performance by 40% through optimization'
-      ]
-    }];
-  }
-  
-  return experiences.slice(0, 3).map(exp => ({
-    title: exp.title || 'Position',
-    company: exp.company || 'Company',
-    achievements: exp.achievements?.length > 0 
-      ? exp.achievements.map(a => enhanceAchievement(a, jobDescription))
-      : ['Delivered high-quality work and exceeded expectations']
-  }));
-};
-
-const enhanceAchievement = (achievement, jobDescription) => {
-  if (achievement.match(/\d+%|\$\d+|\d+ users/)) {
-    return achievement; // Already has metrics
-  }
-  
-  const metrics = ['30%', '50%', '2x', '40%'];
-  const metric = metrics[Math.floor(Math.random() * metrics.length)];
-  
-  if (achievement.length < 60) {
-    return `${achievement}, improving efficiency by ${metric}`;
-  }
-  
-  return achievement;
+  return data;
 };
 
 export const generateTailoredCV = async (parsedCV, jobDescription, template) => {
@@ -228,23 +105,26 @@ IMPORTANT:
 4. Keep all original personal info (name, email, phone)
 5. Return ONLY valid JSON, no markdown code blocks`;
 
-  // Try FREE models first, then paid as backup
-  let lastError = null;
-  let modelsToTry = [MODEL, ...FREE_MODELS.filter(m => m !== MODEL), ...PAID_MODELS];
-
-  console.log('🚀 Starting CV generation with fallback models...');
-  console.log('📋 Parsed CV data:', parsedCV);
+  console.log('🚀 Starting CV generation...');
+  console.log('📋 Parsed CV:', parsedCV);
   console.log('📄 Job description length:', jobDescription.length);
+  console.log('🔑 API Key present:', !!OPENROUTER_API_KEY);
+
+  let lastError = null;
+  const modelsToTry = [MODEL, ...WORKING_MODELS.filter(m => m !== MODEL)];
 
   for (const model of modelsToTry) {
     try {
-      console.log(`🔄 Trying model: ${model}`);
+      console.log(`\n🔄 Trying model: ${model}`);
       const data = await callOpenRouter(model, prompt);
       
       const content = data.choices?.[0]?.message?.content;
-      if (!content) throw new Error('No response from AI');
+      if (!content) {
+        console.error('❌ No content in response:', data);
+        throw new Error('No response from AI');
+      }
 
-      console.log('📦 Raw AI response:', content.substring(0, 200) + '...');
+      console.log('📦 Raw AI response (first 200 chars):', content.substring(0, 200));
 
       // Clean the response (remove markdown if present)
       let cleanContent = content.trim();
@@ -257,57 +137,46 @@ IMPORTANT:
       const tailoredCV = JSON.parse(cleanContent);
       tailoredCV.template = { id: template.id, name: template.name, style: template.style };
       
-      console.log(`✅ Success with model: ${model}`);
-      console.log('📊 Generated CV data:', tailoredCV);
+      console.log(`✅ SUCCESS with model: ${model}`);
+      console.log('📊 Generated CV:', tailoredCV);
       return tailoredCV;
+      
     } catch (error) {
-      console.warn(`❌ Model ${model} failed:`, error.message);
+      console.error(`\n❌ Model ${model} FAILED:`, error.message);
+      console.error('Full error:', error);
       lastError = error;
       
-      // Show user-friendly error in UI
       const errorMsg = error.message.toLowerCase();
-      if (errorMsg.includes('429') || errorMsg.includes('rate limit')) {
-        console.warn(`⏱️ Rate limited on ${model}, trying next model...`);
-      } else if (errorMsg.includes('credits') || errorMsg.includes('afford')) {
-        console.warn(`💰 No credits for ${model}, trying next model...`);
-      } else if (errorMsg.includes('unavailable') || errorMsg.includes('endpoints')) {
-        console.warn(`🚫 ${model} unavailable, trying next model...`);
-      } else {
-        console.warn(`⚠️ ${model} error: ${error.message}`);
+      
+      // Check specific error types
+      if (errorMsg.includes('credits') || errorMsg.includes('insufficient')) {
+        console.error('💰 NO CREDITS - Add credits at: https://openrouter.ai/settings/credits');
+        throw new Error('No credits available. Please add credits to your OpenRouter account at: https://openrouter.ai/settings/credits');
       }
       
-      // If it's a credits/auth/availability issue, try next model
-      if (errorMsg.includes('credits') || 
-          errorMsg.includes('endpoints') || 
-          errorMsg.includes('afford') ||
-          errorMsg.includes('unavailable') ||
-          errorMsg.includes('rate limit') ||
-          errorMsg.includes('429') ||
-          errorMsg.includes('not available')) {
+      if (errorMsg.includes('rate limit') || errorMsg.includes('429')) {
+        console.warn('⏱️ Rate limited, trying next model...');
         continue;
       }
       
-      // For JSON parsing errors, try next model
-      if (error.message.includes('JSON')) {
-        console.warn('📝 JSON parsing failed, trying next model...');
+      if (errorMsg.includes('instantiation') || errorMsg.includes('not found')) {
+        console.warn('🚫 Model not available, trying next...');
         continue;
       }
       
-      // For other errors, throw immediately
-      if (!ENABLE_MOCK_FALLBACK) {
-        throw error;
+      if (errorMsg.includes('json')) {
+        console.warn('📝 JSON parse failed, trying next model...');
+        continue;
       }
+      
+      // Unknown error - try next model
+      console.warn('⚠️ Unknown error, trying next model...');
+      continue;
     }
   }
 
-  // If all models failed and mock mode is enabled
-  if (ENABLE_MOCK_FALLBACK) {
-    console.warn('⚠️ All API models failed, using MOCK mode');
-    const mockCV = generateMockTailoredCV(parsedCV, jobDescription, template);
-    mockCV.template = { id: template.id, name: template.name, style: template.style };
-    return mockCV;
-  }
-
-  // If all models failed
-  throw new Error(`All free models failed. Please add credits to your OpenRouter account or try again later. Last error: ${lastError?.message || 'Unknown error'}`);
+  // All models failed
+  const finalError = `All models failed. OpenRouter's free tier is unavailable. Please add $5 to your account at https://openrouter.ai/settings/credits\n\nLast error: ${lastError?.message || 'Unknown'}`;
+  console.error('❌ FINAL ERROR:', finalError);
+  throw new Error(finalError);
 };
